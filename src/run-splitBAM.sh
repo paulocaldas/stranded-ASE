@@ -47,7 +47,7 @@ if [[ -z "$INPUT_BAM" ]]; then
 fi
 
 # Initialize optional parameters
-THREADS=1 # Default threads
+THREADS=8 # Default threads
 OUTPUT_DIR="bams-split" # Default output directory
 
 # Parse optional arguments

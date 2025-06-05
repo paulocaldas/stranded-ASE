@@ -66,10 +66,10 @@ BASE_FILENAME=$(basename "${INPUT_BAM%.bam}") # e.g., "my_raw_data" from "/path/
 INPUT_BAM_DIR=$(dirname "$INPUT_BAM")         # e.g., "/path/to"
 
 # Set default values for Read Group tags and output file
-RGID="${BASE_FILENAME}"                   # Default: base name of input BAM
-RGLB="${BASE_FILENAME}"                   # Default: base name of input BAM
-RGPL="Illumina"                           # Default: Illumina
-RGPU="${BASE_FILENAME}.unit"              # Default: base name + .unit
+RGID="${BASE_FILENAME}"                               # Default: base name of input BAM
+RGLB="${BASE_FILENAME}"                               # Default: base name of input BAM
+RGPL="Illumina"                                       # Default: Illumina
+RGPU="${BASE_FILENAME}.unit"              	      # Default: base name + .unit
 OUTPUT_BAM="${INPUT_BAM_DIR}/${BASE_FILENAME}.RG.bam" # Default output file
 
 # Parse optional arguments
