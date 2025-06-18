@@ -12,11 +12,10 @@
 
 # Function to display usage information
 usage() {
-  echo "Usage: $0 <input_bam> <vcf_sample_name> <variants_vcf> <reference_fasta> [options]"
+  echo "Usage: $0 <input_bam> <variants_vcf> <reference_fasta> [options]"
   echo ""
   echo "Arguments:"
   echo "  <input_bam>        Path to the input BAM file containing proper read groups(e.g., /path/to/raw_reads.bam)"
- # echo "  <vcf_sample_name>  The biological sample name (e.g., 'hESC_H9'). This MUST match a sample column in your VCF."
   echo "  <variants_vcf>     Path to the input VCF file with variant sites (e.g., variants.vcf.gz)"
   echo "  <reference_fasta>  Path to the reference FASTA file (e.g., genome.fa)"
   echo "  <reference_gtf>    Path to the reference GTF file (e.g., genome.gtf)"
@@ -44,7 +43,6 @@ fi
 
 # Assign positional arguments
 INPUT_BAM="$1"
-#VCF_SAMPLE_NAME="$2"
 VARIANTS_VCF="$2"
 REFERENCE_FASTA="$3"
 REFERENCE_GTF="$4"
@@ -109,7 +107,7 @@ REV_OUTPUT_NAME="${ASE_COUNTER_SUBDIR}/${BASE_FILENAME}.rev.tab"
 # Pipeline Steps
 # ---
 
-echo "=== Starting ASE Pipeline for ${INPUT_BAM} (VCF Sample: ${VCF_SAMPLE_NAME}) ==="
+echo "=== Starting ASE Pipeline for ${INPUT_BAM} ==="
 echo "- VCF: ${VARIANTS_VCF}"
 echo "- Reference: ${REFERENCE_FASTA}"
 echo "- ASEReadCounter options: ${ASER_OPTIONS:-None}" # Show options if provided
