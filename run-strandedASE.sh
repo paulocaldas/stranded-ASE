@@ -12,7 +12,7 @@
 
 # Function to display usage information
 usage() {
-  echo "Usage: $0 <input_bam> <variants_vcf> <reference_fasta> [options]"
+  echo "Usage: $0 <input_bam> <variants_vcf> <reference_fasta> <referece_gtf> [options]"
   echo ""
   echo "Arguments:"
   echo "  <input_bam>        Path to the input BAM file containing proper read groups(e.g., /path/to/raw_reads.bam)"
