@@ -1,0 +1,3 @@
+- Filter VCF to keep only Heterogeous position before running ASEReadCounter -> probably much faster
+- Write Proper Documentation of each Step
+- Incorporate WASP in the Pipeline?

@@ -7,7 +7,6 @@
 # 1. Splitting BAM by strand (for RNA-seq, using run-splitBams.sh)
 # 2. Running GATK ASEReadCounter on both forward and reverse strands (using run-aseReadCounter.sh)
 # 3. Annotate ASEReadCounter Output file (using run-annotateVariants.sh)
-# 4. Compute gene-level Minor Allele Frequency (MAF)
 # ---
 
 # Function to display usage information
@@ -171,13 +170,7 @@ echo "- GTF File: $REFERENCE_GTF"
 
 bash $SRC_CODE_DIR/run-annotateVariants.sh "$FWD_OUTPUT_NAME" "$REV_OUTPUT_NAME" "$REFERENCE_GTF"
 
-# Step 4: Compute MAF for each gene
-OUTPUT_MERGED_FILE="${ASE_COUNTER_SUBDIR}/${BASE_FILENAME}.annotated.tab"
-
-echo " Step 4: Compute MAF for each Gene"
-echo "- Input: $OUTPUT_MERGED_FILE"
-
-python $SRC_CODE_DIR/run-geneLevelMAF.py $OUTPUT_MERGED_FILE
+# Combine FWD and REV annotation into one file and remove intermediate files
 
 # The End
 echo "===  Pipeline completed successfully for ${INPUT_BAM} ==="
