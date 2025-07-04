@@ -6,7 +6,7 @@ Runs a simple pipeline for performing Allele-Specific Expression (ASE) analysis 
 
 To create a new conda environment named "GATK4" containing all required packages run: 
 
-`./src/run-installPackages.sh`
+`bash ./src/run-installPackages.sh`
 
 This Bash script creates a Conda environment named gatk4, configures the necessary Conda channels with strict priority, activates the environment, installs GATK4, and then installs additional tools (bedtools, samtools, gawk, coreutils, pandas, numpy, matplotlib) required for running various bioinformatics scripts.
 
@@ -14,7 +14,7 @@ This Bash script creates a Conda environment named gatk4, configures the necessa
 
 This is the main pipeline script for ASE analysis from a single stranded RNA-seq BAM file.
 
-`./run-strandedASE.sh <input.RG.bam> <variants.vcf> <genome.fa> <annotation.gtf> [options]`
+`bash ./run-strandedASE.sh <input.RG.bam> <variants.vcf> <genome.fa> <annotation.gtf> [options]`
 
 This script automates all bioinformatics steps (src folder) into a single command:
 
@@ -41,11 +41,14 @@ These are passed directly to the run-aseReadCounter.sh sub-script: <br>
 
 - **minor_fq**: Mean of SNP-level MAFs per gene
 
-For each SNP in a gene, computes `MAF_SNP = min(refCount, altCount) / totalCount`. These values are then averaged across all SNPs in that gene. This represents the average allelic balance across sites.
+For each SNP in a gene, computes `MAF_SNP = min(refCount, altCount) / totalCount`. <br>
+These values are then averaged across all SNPs in that gene. This represents the average allelic balance across sites.
 
 - **minor_fq_tot**: Gene-level MAF based on aggregated counts
 
-First, all refCount and altCount are summed across SNPs for each gene. Then computes `minor_fq_tot = min(total_refCount, total_altCount) / totalCount_sum`. This captures the overall balance across the gene (possibly masking outlier SNPs).
+First, all refCount and altCount are summed across SNPs for each gene. <br> 
+Then computes `minor_fq_tot = min(total_refCount, total_altCount) / totalCount_sum`. <br>
+This captures the overall balance across the gene (possibly masking outlier SNPs).
 
 **Expression Classification:**
 
@@ -66,7 +69,7 @@ If it shows well-defined @RG lines, you can skip this step. <br>
 
 *Run the wrapper for GATK's AddOrReplaceReadGroups.*
 
-`./src/run-addReadGroup.sh path/to/your_input.bam --rgsm_value 'sample_name'`
+`bash /src/run-addReadGroup.sh path/to/your_input.bam --rgsm_value 'sample_name'`
 
 The only required argument here is the rgsm_value (sample name) that will be added to the Read Group.  <br>
 It is critical because it MUST match the sample column name in your VCF file for subsequent analysis steps. <br>
@@ -75,7 +78,7 @@ This script will create a new BAM file (filename.RG.bam) in the same directory a
 Optional Arguments: <br>
 --rgid <ID>: Read Group ID (ID tag). Default: base name of input BAM. <br>
 --rglb <LIB>: Read Group Library (LB tag). Default: base name of input BAM. <br> 
---rgpl <PLATFORM>: Read Group Platform (PL tag). Default: Illumina. Valid values include ILLUMINA, SOLID, LS454, HELICOS, PACBIO, etc. <br>
+--rgpl <PLATFORM>: Read Group Platform (PL tag). Default: Illumina. Valid values include ILLUMINA, SOLID, PACBIO, etc. <br>
 --rgpu <UNIT>: Read Group Platform Unit (PU tag). Default: base name of input BAM + .unit. <br>
  -o <file>: Specify the output BAM file name. Default: <input_bam_base>.RG.bam in the input BAM's directory. <br>
 
@@ -88,7 +91,7 @@ Divides the input BAM into forward and reverse strand-specific BAM files.
 
 GATK's ASEReadCounter doesn't inherently account for strand-specific read orientation. Our workaround involves splitting the aligned BAM file into forward and reverse strand components, then running ASEReadCounter individually on each. To run this step, simply type:
 
-`./src/run-splitBAM.sh <input_bam>`
+`bash /src/run-splitBAM.sh <input_bam>`
 
 Output:
 - Creates two new bam files (fwd and rev) inside a new folder (default: /data/bams-split)
@@ -103,7 +106,7 @@ Runs ASEReadCounter on both strands against variants on the VCF file.
 
 This step calculates allele-specific read counts for the variants of interest from your prepared BAM files. Use the run-aseReadCounter.sh script with the following arguments: 
 
-`./src/run-aseReadCounter.sh <input_bam> <variants.vcf.gz> <reference.fasta>`
+`bash /src/run-aseReadCounter.sh <input_bam> <variants.vcf.gz> <reference.fasta>`
 
 Output:
 - A new folder named out-aseReadCounter is created in the directory where the script is executed.
@@ -114,7 +117,7 @@ Suplements ASEReadCounter ouput with gene information
 
 This step annotates Allele-Specific Expression (ASE) count data—produced by GATK’s ASEReadCounter—with gene information. It takes as input two allele count files (in .tab format) corresponding to the forward and reverse strands, along with a gene annotation file in .gtf format.
 
-` ./src/run-annotateVariants.sh <fwd_tab_file> <rev_tab_file> <gtf_file>`
+` bash /src/run-annotateVariants.sh <fwd_tab_file> <rev_tab_file> <gtf_file>`
 
 Output:
 - Produces a .tab file named `filename.annotated.tab` combining ASE counts with gene annotations. 
