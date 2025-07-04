@@ -134,13 +134,11 @@ Output:
 
 
 ### 4. geneLevelMAF
+Computes gene-level Minor Allele Frequency (MAF) and use it as a proxy to infer allelic imbalance. 
 
-Aggregates annotated SNP-level data to calculate gene-level Minor Allele Frequency (MAF) and use it as a proxy for allelic imbalance. 
+`python src/run-geneLevelMAF.py filename.annotated.tab`
 
-`python src/run-geneLevelMAF.py [-h] [-o OUTPUT] [-t THRESHOLD] input_file`
-
-**Optional arguments**:
-
+**Optional arguments**: <br>
 - --threshold: Minimum total counts for a SNP to be included. SNPs with 'totalCount' <= threshold will be excluded. Default: 10.
 - --output: Path to output file. Default: '<input_filename>.geneLevelMAF'.
 
