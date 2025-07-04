@@ -141,9 +141,8 @@ Aggregates annotated SNP-level data to calculate gene-level Minor Allele Frequen
 
 **Optional arguments**:
 
-- -t, --threshold: Minimum total read count threshold for SNPs to be included. SNPs with 'totalCount' <= threshold will be excluded. Default: 10.
-    
-- -o, --output: Path to the output file where the aggregated gene-level results will be saved. If not provided, output will be named '<input_filename>.geneLevelMAF' by default.
+- --threshold: Minimum total counts for a SNP to be included. SNPs with 'totalCount' <= threshold will be excluded. Default: 10.
+- --output: Path to output file. Default: '<input_filename>.geneLevelMAF'.
 
 **Key Steps in the Script**:
 - Read SNP-level ASE data.
