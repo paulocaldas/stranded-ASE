@@ -8,11 +8,13 @@ To create a new conda environment named "GATK4" containing all required packages
 
 `./src/run-installPackages.sh`
 
+This Bash script creates a Conda environment named gatk4, configures the necessary Conda channels with strict priority, activates the environment, installs GATK4, and then installs additional tools (bedtools, samtools, gawk, coreutils, pandas, numpy, matplotlib) required for running various bioinformatics scripts.
+
 ## Quick Start: Run the stranded-ASE-analysis pipeline
 
 This is the main pipeline script for ASE analysis from a single stranded RNA-seq BAM file.
 
-`./run-strandedASE.sh file path/to/your_input.RG.bam variants.vcf.gz genome.fa genome.gtf`
+`./run-strandedASE.sh <input.RG.bam> <variants.vcf> <genome.fa> <annotation.gtf> [options]`
 
 This script automates all bioinformatics steps (src folder) into a single command:
 
@@ -22,7 +24,7 @@ This script automates all bioinformatics steps (src folder) into a single comman
 4. geneLevelMAF: Aggregates annotated SNP-level data to calculate gene-level MAF.
 
 **Required Arguments**: <br>
-- <input_bam> : Path to the input BAM file (must contain Read Groups). <br>
+- <input_bam> : Path to the input BAM file (must contain Read Groups!). <br>
 - <variants_vcf> : Path to the VCF file with variant sites. <br>
 - <reference_fasta> : Path to the reference FASTA file. <br>
 - <reference_gtf> : Path to the reference GTF annotation file. <br>
