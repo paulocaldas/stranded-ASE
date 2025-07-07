@@ -20,4 +20,4 @@ conda activate gatk4
 conda install -y gatk4
 
 # Install all other required packages for all scripts
-conda install -y bedtools samtools gawk coreutils pandas numpy matplotlib
+conda install -y bedtools bcftools samtools gawk coreutils pandas numpy matplotlib
