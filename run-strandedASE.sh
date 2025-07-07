@@ -130,7 +130,7 @@ echo "# Step 1: Splitting BAM by Strand"
 echo "- Input: ${RG_BAM}"
 echo "- Output Directory: ${SPLIT_BAM_SUBDIR}"
 bash $SRC_CODE_DIR/run-splitBAM.sh "${RG_BAM}" || \
-  { echo "Error: Step 2 (Split BAM) failed. Exiting."; exit 1; }
+  { echo "Error: Step 1 (Split BAM) failed. Exiting."; exit 1; }
 
 echo ".BAM split successfully to ${SPLIT_BAM_SUBDIR}."
 echo " "
@@ -141,7 +141,7 @@ echo "- Input: ${FWD_BAM}"
 echo "- Output Name: ${FWD_OUTPUT_NAME}"
 bash $SRC_CODE_DIR/run-aseReadCounter.sh "${FWD_BAM}" "${VARIANTS_VCF}" "${REFERENCE_FASTA}" \
   --output-name "${FWD_OUTPUT_NAME}" ${ASER_OPTIONS} || \
-  { echo "Error: Step 3a (ASEReadCounter - Forward) failed. Exiting."; exit 1; }
+  { echo "Error: Step 2a (ASEReadCounter - Forward) failed. Exiting."; exit 1; }
 
 echo ".ASEReadCounter completed for forward reads."
 echo " "
@@ -153,7 +153,7 @@ echo "- Output Name: ${REV_OUTPUT_NAME}"
 
 bash $SRC_CODE_DIR/run-aseReadCounter.sh "${REV_BAM}" "${VARIANTS_VCF}" "${REFERENCE_FASTA}" \
   --output-name "${REV_OUTPUT_NAME}" ${ASER_OPTIONS} || \
-  { echo "Error: Step 3b (ASEReadCounter - Reverse) failed. Exiting."; exit 1; }
+  { echo "Error: Step 2b (ASEReadCounter - Reverse) failed. Exiting."; exit 1; }
 
 echo ".ASEReadCounter completed for reverse reads."
 

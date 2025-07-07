@@ -136,7 +136,7 @@ echo "---"
 # Execute GATK ASEReadCounter command
 gatk ASEReadCounter \
   -R "${REFERENCE_FASTA}" \
-  -V "${VARIANTS_HET_VCF}" \
+  -V "${VARIANTS_VCF}" \
   -I "${INPUT_BAM}" \
   -O "${FINAL_OUTPUT_NAME}" \
   --min-mapping-quality "${MIN_MQ}" \
