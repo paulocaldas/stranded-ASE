@@ -6,7 +6,7 @@ Runs a simple pipeline for performing Allele-Specific Expression (ASE) analysis 
 
 To create a new conda environment named "GATK4" containing all required packages run: 
 
-`bash ./src/run-installPackages.sh`
+`bash /src/run-installPackages.sh`
 
 This Bash script creates a Conda environment named gatk4, configures the necessary Conda channels with strict priority, activates the environment, installs GATK4, and then installs additional tools (bedtools, samtools, gawk, coreutils, pandas, numpy, matplotlib) required for running various bioinformatics scripts.
 
@@ -14,7 +14,7 @@ This Bash script creates a Conda environment named gatk4, configures the necessa
 
 This is the main pipeline script for ASE analysis from a single stranded RNA-seq BAM file.
 
-`bash ./run-strandedASE.sh <input.RG.bam> <variants.vcf> <genome.fa> <annotation.gtf> [options]`
+`bash run-strandedASE.sh <input.RG.bam> <variants.vcf> <genome.fa> <annotation.gtf> [options]`
 
 This script automates all bioinformatics steps (src folder) into a single command:
 
