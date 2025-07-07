@@ -123,14 +123,11 @@ Output:
 
 **Key Steps in the Script:**
 
-1. GTF to BED Conversion: Converts the .gtf gene annotation file and the ASEReadCounter .tab files into BED format.
-
-2. Strand-Specific BED Splitting: Splits the BED file into forward (+) and reverse (–) strand-specific files for strand-aware analysis.
-
-3. Strand-Specific Intersection: Uses bedtools intersect -wa -wb to map ASE BED entries to gene annotations in a strand-specific manner.
-
-4. Creates .annotated.tab files (forward and reverse) combining ASE counts with gene annotations. Both files are merged in the same table and saved in the same directory as the input files.
-
+1. Converts the gtf annotation and the ASEReadCounter output files into BED format.
+2. Splits the annotation BED into forward (fwd) and reverse (rev) strand-specific files for strand-aware analysis.
+3. Uses *bedtools intersect -wa -wb* to map allelic counts to gene annotations in a strand-specific manner.
+4. Creates .annotated.tab files (fwd and rev) combining ASE counts with gene annotations.
+5. Both files are merged in the same table and saved in the same directory as the input files.
 
 ### 4. geneLevelMAF
 Computes gene-level Minor Allele Frequency (MAF) and use it as a proxy to infer allelic imbalance. 
