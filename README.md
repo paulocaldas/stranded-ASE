@@ -139,12 +139,12 @@ Computes gene-level Minor Allele Frequency (MAF) and use it as a proxy to infer 
 - --output: Path to output file. Default: '<input_filename>.geneLevelMAF'.
 
 **Key Steps in the Script**:
-- Read SNP-level ASE data.
-- Filter SNPs with low total read counts.
-- Calculate per-SNP MAF and compute `minor_fq`.
-- Sum SNP counts per gene and compute `minor_fq_tot`
-- Concatenate all SNPs variant considered into a column.
-- Classify genes by expression pattern besed on the `minor_fq`.
+1. Read SNP-level ASE data.
+2. Filter SNPs with low total read counts.
+3. Calculate per-SNP MAF and compute `minor_fq`.
+4. Sum SNP counts per gene and compute `minor_fq_tot`
+5. Concatenate all SNPs variant considered into a column.
+6. Classify genes by expression pattern besed on the `minor_fq`.
 
 ## Helper Functions
 
