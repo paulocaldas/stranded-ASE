@@ -83,7 +83,6 @@ Optional Arguments: <br>
  -o <file>: Specify the output BAM file name. Default: <input_bam_base>.RG.bam in the input BAM's directory. <br>
 
 
-
 ## Background Functions
 
 ### 1. splitBAM
@@ -117,7 +116,7 @@ Suplements ASEReadCounter ouput with gene information
 
 This step annotates Allele-Specific Expression (ASE) count data—produced by GATK’s ASEReadCounter—with gene information. It takes as input two allele count files (in .tab format) corresponding to the forward and reverse strands, along with a gene annotation file in .gtf format.
 
-` bash /src/run-annotateVariants.sh <fwd_tab_file> <rev_tab_file> <gtf_file>`
+`bash /src/run-annotateVariants.sh <fwd_tab_file> <rev_tab_file> <gtf_file>`
 
 Output:
 - Produces a .tab file named `filename.annotated.tab` combining ASE counts with gene annotations. 
@@ -149,3 +148,12 @@ Computes gene-level Minor Allele Frequency (MAF) and use it as a proxy to infer 
 - Sum SNP counts per gene and compute `minor_fq_tot`
 - Concatenate all SNPs variant considered into a column.
 - Classify genes by expression pattern besed on the `minor_fq`.
+
+## Helper Functions
+
+**Filter VCF file for heterozygous variants**
+
+`bash src/run-filterVCF.sh <filename.vcf.gz> <sample_name>`
+
+- It uses GATK SelectVariants and writes the output to filename.HET.vcf.gz
+- ASEReadCounter runs faster if only heterozygous positions are provided
