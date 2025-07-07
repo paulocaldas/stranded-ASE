@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # ---
@@ -117,6 +118,27 @@ else
   fi
 fi
 
+# ---
+# Filter VCF file to contain only Heterozygous sites
+# ---
+
+VARIANTS_HET_VCF="${VARIANTS_VCF/.vcf.gz/.HET.vcf.gz}"
+
+if [ ! -f "${VARIANTS_HET_VCF}" ]; then
+	echo " "
+	echo "Creating heterozygous-only VCF: ${VARIANTS_HET_VCF}"
+	echo " "
+
+	gatk SelectVariants \
+	  -V "${VARIANTS_VCF}" \
+	  --select "vc.getGenotype('SAMPLE_NAME').isHet()" \
+	  -O "${VARIANTS_HET_VCF}"
+else
+	echo " "
+	echo "Heterozygous VCF already exists: ${VARIANTS_HET_VCF}, skipping."
+	echo " "
+fi
+
 
 # ---
 # Run GATK ASEReadCounter
@@ -136,7 +158,7 @@ echo "---"
 # Execute GATK ASEReadCounter command
 gatk ASEReadCounter \
   -R "${REFERENCE_FASTA}" \
-  -V "${VARIANTS_VCF}" \
+  -V "${VARIANTS_HET_VCF}" \
   -I "${INPUT_BAM}" \
   -O "${FINAL_OUTPUT_NAME}" \
   --min-mapping-quality "${MIN_MQ}" \
