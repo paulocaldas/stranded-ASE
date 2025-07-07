@@ -1,2 +1,3 @@
 - Filter VCF to keep only Heterogeous position before running ASEReadCounter -> probably much faster
 - Incorporate WASP in the Pipeline?
+- better gene-level agregation
