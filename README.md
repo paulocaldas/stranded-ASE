@@ -148,9 +148,30 @@ Computes gene-level Minor Allele Frequency (MAF) and use it as a proxy to infer 
 
 ## Helper Functions
 
-**Filter VCF file for heterozygous variants**
+#### Filter VCF file for heterozygous variants
 
 `bash src/run-filterVCF.sh <filename.vcf.gz> <sample_name>`
 
 - It uses GATK SelectVariants and writes the output to filename.HET.vcf.gz
 - ASEReadCounter runs faster if only heterozygous positions are provided
+
+#### Correcting Mapping Bias with WASP
+
+When aligning DNA reads to a reference genome, differences between the sample and reference can cause reference allele bias, where reads matching the reference are more likely to align. This can distort allele-specific expression analyses. STAR includes an efficient implementation of WASP to correct for this bias when sample genotypes are provided (`--varVCFfile`). To use it, enable `--waspOutputMode` along with `--varVCFfile`.
+
+```
+STAR --readFilesCommand zcat \
+ --runThreadN 16 \
+ --genomeDir /data/star_index \
+ --outFileNamePrefix SampleA_ \
+ --readFilesIn reads.fq.gz \
+ --waspOutputMode SAMtag \
+ --varVCFfile sample.vcf
+```
+
+Next, we can use `samtools` to select reads that are uniquely mapped (`-q 255`) and have allele-specific bias corrected — either they don’t overlap SNPs (`![vW]`) or passed the WASP filter (`[vW]==1`):
+
+`samtools view -h -b -e '![vW] || [vW]==1' -q 255 -o filename.WASPfilter.aligned.bam filename.aligned.bam`
+
+Overall, it’s safe to enable `--waspOutputMode` by default, then the vW tag to filter reads only when reference bias matters (e.g., in ASE or imprinting studies); otherwise, you can ignore it and use all reads normally.
+But this procedure increases runtime and is only necessary for allele-specific analyses. 
