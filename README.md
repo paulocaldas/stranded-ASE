@@ -166,7 +166,8 @@ STAR --readFilesCommand zcat \
  --outFileNamePrefix SampleA_ \
  --readFilesIn reads.fq.gz \
  --waspOutputMode SAMtag \
- --varVCFfile sample.vcf
+ --varVCFfile sample.vcf \
+ --outSAMattributes All
 ```
 
 Next, we can use `samtools` to select reads that are uniquely mapped (`-q 255`) and have allele-specific bias corrected — either they don’t overlap SNPs (`![vW]`) or passed the WASP filter (`[vW]==1`):
