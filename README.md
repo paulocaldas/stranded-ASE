@@ -64,7 +64,7 @@ If your bam file does not contain read groups, you will get an error message. To
 
 `samtools view -H your_input.bam | grep '^@RG'` <br>
 
-If this command produces no output, or if the output is incomplete or incorrect, you need to add or replace read groups. <br>
+If this command produces no output (or an incorrect output) you need to add or replace read groups. <br>
 If it shows well-defined @RG lines, you can skip this step. <br>
 
 *Run the wrapper for GATK's AddOrReplaceReadGroups.*
@@ -72,7 +72,7 @@ If it shows well-defined @RG lines, you can skip this step. <br>
 `bash /src/run-addReadGroup.sh path/to/your_input.bam --rgsm_value 'sample_name'`
 
 The only required argument here is the rgsm_value (sample name) that will be added to the Read Group.  <br>
-It is critical because it MUST match the sample column name in your VCF file for subsequent analysis steps. <br>
+It is critical because it **MUST match the sample column name in your VCF file for subsequent analysis steps**. <br>
 This script will create a new BAM file (filename.RG.bam) in the same directory as your input file. <br>
 
 Optional Arguments: <br>
