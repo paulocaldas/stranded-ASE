@@ -160,15 +160,6 @@ Computes gene-level Minor Allele Frequency (MAF) and use it as a proxy to infer 
 When aligning DNA reads to a reference genome, differences between the sample and reference can cause reference allele bias, where reads matching the reference are more likely to align. This can distort allele-specific expression analyses. STAR includes an efficient implementation of WASP to correct for this bias when sample genotypes are provided (`--varVCFfile`). To use it, enable `--waspOutputMode` along with `--varVCFfile`.
 
 ```
-STAR --readFilesCommand zcat \
- --runThreadN 16 \
- --genomeDir /data/star_index \
- --outFileNamePrefix SampleA_ \
- --readFilesIn reads.fq.gz \
- --waspOutputMode SAMtag \
- --varVCFfile sample.vcf \
- --outSAMattributes All
-
 STAR \
 --runThreadN 8 \
 --genomeDir $index \
