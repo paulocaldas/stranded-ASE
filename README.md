@@ -14,7 +14,7 @@ This Bash script creates a Conda environment named gatk4, configures the necessa
 
 This is the main pipeline script for ASE analysis from a single stranded RNA-seq BAM file.
 
-`bash run-strandedASE.sh <input.RG.bam> <variants.vcf> <genome.fa> <annotation.gtf> [options]`
+`bash run-strandedASE.sh <filename.RG.bam> <variants.vcf> <genome.fa> <annotation.gtf> [options]`
 
 This script automates all bioinformatics steps (src folder) into a single command:
 
@@ -24,10 +24,10 @@ This script automates all bioinformatics steps (src folder) into a single comman
 4. geneLevelMAF: Aggregates annotated SNP-level data to calculate gene-level MAF.
 
 **Required Arguments**: <br>
-- <input_bam> : Path to the input BAM file (must contain Read Groups!). <br>
-- <variants_vcf> : Path to the VCF file with variant sites. <br>
-- <reference_fasta> : Path to the reference FASTA file. <br>
-- <reference_gtf> : Path to the reference GTF annotation file. <br>
+- <filename.bam> : Path to the input BAM file (must contain Read Groups!). <br>
+- <variants.vcf> : Path to the VCF file with variant sites. <br>
+- <genome.fa> : Path to the reference FASTA file. <br>
+- <annotation.gtf> : Path to the reference GTF annotation file. <br>
 
 Optional Arguments: <br>
 These are passed directly to the run-aseReadCounter.sh sub-script: <br>
@@ -69,7 +69,7 @@ If it shows well-defined @RG lines, you can skip this step. <br>
 
 *Run the wrapper for GATK's AddOrReplaceReadGroups.*
 
-`bash /src/run-addReadGroup.sh path/to/your_input.bam --rgsm_value 'sample_name'`
+`bash /src/run-addReadGroup.sh <filename.bam> <sample_name>
 
 The only required argument here is the rgsm_value (sample name) that will be added to the Read Group.  <br>
 It is critical because it **MUST match the sample column name in your VCF file for subsequent analysis steps**. <br>
