@@ -149,6 +149,8 @@ Computes gene-level Minor Allele Frequency (MAF) and use it as a proxy to infer 
 ## Helper Functions
 
 #### Filter VCF file for heterozygous variants
+ASEReadCounter quantifies ASE which can only be assessed at heterozygous sites. 
+Filtering the VCF to include only these positions reduces runtime and memory usage by limiting the number of loci scanned in the BAM/CRAM file.
 
 `bash src/run-filterVCF.sh <filename.vcf.gz> <sample_name>`
 
