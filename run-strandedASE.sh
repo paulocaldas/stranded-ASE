@@ -73,7 +73,7 @@ echo "Read Groups found in ${INPUT_BAM}."
 
 # Derive base filename and directory for intermediate files
 # This ensures paths are correctly handled regardless of input_bam's location
-SRC_CODE_DIR="src" # source code directory
+SRC_CODE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/src # source code directory
 BASE_FILENAME=$(basename "${INPUT_BAM%.bam}") # e.g., "my_sample" from "/path/to/my_sample.bam"
 INPUT_BAM_DIR=$(dirname "$INPUT_BAM")         # e.g., "/path/to"
 
