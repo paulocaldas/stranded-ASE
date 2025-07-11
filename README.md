@@ -14,7 +14,7 @@ This Bash script creates a Conda environment named gatk4, configures the necessa
 
 This is the main pipeline script for ASE analysis from a single stranded RNA-seq BAM file.
 
-`bash run-strandedASE.sh <input.RG.bam> <variants.vcf> <genome.fa> <annotation.gtf> [options]`
+`bash run-strandedASE.sh <filename.RG.bam> <variants.vcf> <genome.fa> <annotation.gtf> [options]`
 
 This script automates all bioinformatics steps (src folder) into a single command:
 
@@ -24,10 +24,10 @@ This script automates all bioinformatics steps (src folder) into a single comman
 4. geneLevelMAF: Aggregates annotated SNP-level data to calculate gene-level MAF.
 
 **Required Arguments**: <br>
-- <input_bam> : Path to the input BAM file (must contain Read Groups!). <br>
-- <variants_vcf> : Path to the VCF file with variant sites. <br>
-- <reference_fasta> : Path to the reference FASTA file. <br>
-- <reference_gtf> : Path to the reference GTF annotation file. <br>
+- <filename.bam> : Path to the input BAM file (must contain Read Groups!). <br>
+- <variants.vcf> : Path to the VCF file with variant sites. <br>
+- <genome.fa> : Path to the reference FASTA file. <br>
+- <annotation.gtf> : Path to the reference GTF annotation file. <br>
 
 Optional Arguments: <br>
 These are passed directly to the run-aseReadCounter.sh sub-script: <br>
@@ -64,15 +64,15 @@ If your bam file does not contain read groups, you will get an error message. To
 
 `samtools view -H your_input.bam | grep '^@RG'` <br>
 
-If this command produces no output, or if the output is incomplete or incorrect, you need to add or replace read groups. <br>
+If this command produces no output (or an incorrect output) you need to add or replace read groups. <br>
 If it shows well-defined @RG lines, you can skip this step. <br>
 
 *Run the wrapper for GATK's AddOrReplaceReadGroups.*
 
-`bash /src/run-addReadGroup.sh path/to/your_input.bam --rgsm_value 'sample_name'`
+`bash /src/run-addReadGroup.sh <filename.bam> <sample_name>
 
 The only required argument here is the rgsm_value (sample name) that will be added to the Read Group.  <br>
-It is critical because it MUST match the sample column name in your VCF file for subsequent analysis steps. <br>
+It is critical because it **MUST match the sample column name in your VCF file for subsequent analysis steps**. <br>
 This script will create a new BAM file (filename.RG.bam) in the same directory as your input file. <br>
 
 Optional Arguments: <br>
@@ -148,9 +148,35 @@ Computes gene-level Minor Allele Frequency (MAF) and use it as a proxy to infer 
 
 ## Helper Functions
 
-**Filter VCF file for heterozygous variants**
+#### Filter VCF file for heterozygous variants
 
 `bash src/run-filterVCF.sh <filename.vcf.gz> <sample_name>`
 
 - It uses GATK SelectVariants and writes the output to filename.HET.vcf.gz
 - ASEReadCounter runs faster if only heterozygous positions are provided
+
+#### Correcting Mapping Bias with WASP
+
+When aligning DNA reads to a reference genome, differences between the sample and reference can cause reference allele bias, where reads matching the reference are more likely to align. This can distort allele-specific expression analyses. STAR includes an efficient implementation of WASP to correct for this bias when sample genotypes are provided (`--varVCFfile`). To use it, enable `--waspOutputMode` along with `--varVCFfile`.
+
+```
+STAR \
+--runThreadN 8 \
+--genomeDir $index \
+--readFilesCommand zcat \
+--readFilesIn file_1.fq.gz file_2.fq.gz \
+--outSAMtype BAM SortedByCoordinate \
+--outFilterMultimapNmax 1 \
+--quantMode GeneCounts \
+--sjdbGTFfile $annot_file \
+--waspOutputMode SAMtag \
+--varVCFfile $vcf_file \
+--outSAMattributes All
+```
+
+Next, we can use `samtools` to select reads that are uniquely mapped (`-q 255`) and have allele-specific bias corrected — either they don’t overlap SNPs (`![vW]`) or passed the WASP filter (`[vW]==1`):
+
+`samtools view -h -b -e '![vW] || [vW]==1' -q 255 -o filename.WASPfilter.aligned.bam filename.aligned.bam`
+
+Overall, it’s safe to enable `--waspOutputMode` by default, then the vW tag to filter reads only when reference bias matters (e.g., in ASE or imprinting studies); otherwise, you can ignore it and use all reads normally.
+But this procedure increases runtime and is only necessary for allele-specific analyses. 
