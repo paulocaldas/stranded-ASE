@@ -45,7 +45,7 @@ For each SNP in a gene, `maf_SNP = min(refCount, altCount) / totalCount` is comp
 This measures the degree of allelic imbalance at each site, regardless of which allele is favored.  <br> 
 The gene-level value is then calculated as a weighted average, with each SNP weighted by its total read coverage:  <br> 
 `maf_weighted = Σ (maf_SNP × totalCount_SNP) / Σ (totalCount_SNP)` <br> 
-This approach emphasizes well-covered SNPs, providing a more reliable estimate of overall allelic imbalance across the gene.
+This approach emphasizes well-covered SNPs, providing a reliable estimate of overall allelic imbalance across the gene.
 
 - **maf_tot**: Gene-level MAF based on aggregated counts
 
