@@ -23,67 +23,59 @@ def isBiallelic(minor_exp):
     else:
         return 'monoallelic'
 
-def gene_level_aggregation(ase_res, threshold = 10):
-    """
-    Aggregates counts from all SNPs for a given gene and computes MAF
-    taking the total count into account.
-
-    Args:
-        ase_res (pd.DataFrame): Input DataFrame containing SNP-level ASE results.
-        threshold (int): Minimum total counts for a SNP to be included in aggregation.
-
-    Returns:
-        pd.DataFrame: A DataFrame aggregated at the gene level with allelic expression labels.
-    """
-    # Apply threshold for min total counts
-    # Using .copy() to avoid SettingWithCopyWarning in pandas
+def gene_level_aggregation(ase_res, threshold=10):
+    
+    # filter for minimum read number
     ase_res_filtered = ase_res[ase_res['totalCount'] > threshold].copy()
-
+    
     if ase_res_filtered.empty:
-        print(f"Warning: After applying 'totalCount' threshold > {threshold}, no data remains. Returning an empty DataFrame.", file=sys.stderr)
-        # Return a DataFrame with the expected columns, even if empty, to prevent errors downstream
-        return pd.DataFrame(columns=[
-            'gene_id', 'gene_name', 'gene_chr', 'gene_start', 'gene_end', 'gene_strand',
-            'refCount', 'altCount', 'totalCount', 'minor_fq', 'variant', 'minor_fq_tot', 'allelic_exp'
-        ])
+        print(f"Warning: No SNPs left after applying threshold > {threshold}.")
+        return
 
-    # Create variant column by concatenating relevant SNP information
+    # Create variant label
     variant_label = (ase_res_filtered['contig'] + '_' +
                      ase_res_filtered['position'].astype(str) + '_' +
                      ase_res_filtered['refAllele'] + '_' +
                      ase_res_filtered['altAllele'])
+    
     ase_res_filtered.insert(ase_res_filtered.shape[1], 'variant', variant_label)
 
-    # Compute minor allele frequency for each SNP
-    minor_fq = ase_res_filtered[['refCount','altCount']].min(axis = 1) / (ase_res_filtered['totalCount'])
-    ase_res_filtered.insert(ase_res_filtered.shape[1], 'minor_fq', minor_fq)
+    # Compute minor allele frequency for each SNP (maf)
+    ase_res_filtered['maf'] = ase_res_filtered[['refCount', 'altCount']].min(axis=1) / ase_res_filtered['totalCount']
 
-    # Aggregate ref and alt count per gene;
-    # compute mean MAF and aggregate all variants into a single column
-    print("Aggregating SNP data to gene level...")
+    # weighted average of individual SNP's MAF
+    
+    def weighted_aggregation(df):
+        ref_sum = df['refCount'].sum()
+        alt_sum = df['altCount'].sum()
+        total_sum = df['totalCount'].sum()
+        weights = df['totalCount']
+        maf = df['maf']
+        weighted_maf = (maf * weights).sum() / weights.sum() if weights.sum() > 0 else 0
+        variants_concat = ','.join(df['variant'].astype(str))
+
+        out = pd.Series({
+            'refCount': ref_sum,
+            'altCount': alt_sum,
+            'totalCount': total_sum,
+            'maf_weighted': weighted_maf,
+            'variant': variants_concat})
+        
+        return out
+
+    print("Aggregating SNP data to gene level with weighted MAF...")
+    
     gene_level = (
-        ase_res_filtered.groupby(['gene_id', 'gene_name',
-                                  'gene_chr','gene_start','gene_end', 'gene_strand'])
-        .agg({
-            'refCount': 'sum',
-            'altCount': 'sum',
-            'totalCount':'sum',
-            'minor_fq': 'mean', # Mean of individual SNP minor frequencies
-            'variant': lambda x: ','.join(x.astype(str)) # Concatenate all variants
-        }).reset_index()
-    )
+        ase_res_filtered.groupby(['gene_id', 'gene_name', 'gene_chr', 'gene_start', 'gene_end', 'gene_strand'])
+        .apply(weighted_aggregation, include_groups=False)
+        .reset_index())
 
     # Compute gene-level minor allele frequency based on summed counts
-    # This calculation should use the aggregated refCount and altCount at the gene level
-    minor_fq_tot = gene_level[['refCount','altCount']].min(axis = 1) / (gene_level['totalCount'])
-    # Insert at a logical position, e.g., before allelic_exp
-    gene_level.insert(gene_level.shape[1], 'minor_fq_tot', minor_fq_tot)
+    gene_level.insert(gene_level.shape[1]-1, 'maf_tot', gene_level[['refCount', 'altCount']].min(axis=1) / gene_level['totalCount'])
 
+    # Add allelic expression label using weighted maf_tot
+    gene_level.insert(gene_level.shape[1]-1, 'allelic_exp', gene_level['maf_tot'].apply(isBiallelic))
 
-    # Add label according to the minor allele expression (monoallelic vs biallelic)
-    # This uses the 'minor_fq' (mean SNP minor frequency) for classification
-    gene_level.insert(gene_level.shape[1], 'allelic_exp', gene_level['minor_fq'].apply(isBiallelic))
-    
     print("Gene level aggregation complete.")
     return gene_level
 
