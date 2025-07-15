@@ -39,15 +39,18 @@ These are passed directly to the run-aseReadCounter.sh sub-script: <br>
 
 **MAF-Based Metrics in the Output Table**:
 
-- **minor_fq**: Mean of SNP-level MAFs per gene
+- **maf_weighted**: Mean of SNP-level MAFs per gene
 
-For each SNP in a gene, computes `MAF_SNP = min(refCount, altCount) / totalCount`. <br>
-These values are then averaged across all SNPs in that gene. This represents the average allelic balance across sites.
+For each SNP in a gene, `maf_SNP = min(refCount, altCount) / totalCount` is computed. <br> 
+This measures the degree of allelic imbalance at each site, regardless of which allele is favored.  <br> 
+The gene-level value is then calculated as a weighted average, with each SNP weighted by its total read coverage:  <br> 
+`maf_weighted = Σ (maf_SNP × totalCount_SNP) / Σ (totalCount_SNP)` <br> 
+This approach emphasizes well-covered SNPs, providing a more reliable estimate of overall allelic imbalance across the gene.
 
-- **minor_fq_tot**: Gene-level MAF based on aggregated counts
+- **maf_tot**: Gene-level MAF based on aggregated counts
 
 First, all refCount and altCount are summed across SNPs for each gene. <br> 
-Then computes `minor_fq_tot = min(total_refCount, total_altCount) / totalCount_sum`. <br>
+Then computes `maf_tot = min(total_refCount, total_altCount) / totalCount_sum`. <br>
 This captures the overall balance across the gene (possibly masking outlier SNPs).
 
 **Expression Classification:**
@@ -141,10 +144,10 @@ Computes gene-level Minor Allele Frequency (MAF) and use it as a proxy to infer 
 **Key Steps in the Script**:
 1. Read SNP-level ASE data.
 2. Filter SNPs with low total read counts.
-3. Calculate per-SNP MAF and compute `minor_fq`.
-4. Sum SNP counts per gene and compute `minor_fq_tot`
+3. Calculate per-SNP MAF and computes maf_weighted.
+4. Sum SNP counts per gene and computes maf_tot.
 5. Concatenate all SNPs variant considered into a column.
-6. Classify genes by expression pattern besed on the `minor_fq`.
+6. Classify genes by expression pattern besed on the `maf_tot`.
 
 ## Helper Functions
 
