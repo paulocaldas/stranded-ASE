@@ -72,7 +72,7 @@ If it shows well-defined @RG lines, you can skip this step. <br>
 
 *Run the wrapper for GATK's AddOrReplaceReadGroups.*
 
-`bash /src/run-addReadGroup.sh <filename.bam> <sample_name>
+`bash /src/run-addReadGroup.sh <filename.bam> <sample_name>`
 
 The only required argument here is the rgsm_value (sample name) that will be added to the Read Group.  <br>
 It is critical because it **MUST match the sample column name in your VCF file for subsequent analysis steps**. <br>
