@@ -61,6 +61,7 @@ if [ ! -f "$VARIANTS_HET_VCF" ]; then
 
     gatk SelectVariants \
         -V "$VARIANTS_VCF" \
+        --select-type-to-include SNP \
         --select "vc.getGenotype('${SAMPLE_NAME}').isHet()" \
         -O "$VARIANTS_HET_VCF"
 
