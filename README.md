@@ -12,7 +12,7 @@ This Bash script creates a Conda environment named gatk4, configures the necessa
 
 ## Quick Start: Run the stranded-ASE-analysis pipeline
 
-This is the main pipeline script for ASE analysis from a single stranded RNA-seq BAM file.
+This is the main pipeline script for ASE analysis: Uses a single stranded RNA-seq BAM and a VCF file filtered to retain only PASS heterozygous SNPs.
 
 `bash run-strandedASE.sh <filename.RG.bam> <variants.vcf> <genome.fa> <annotation.gtf> [options]`
 
@@ -25,7 +25,7 @@ This script automates all bioinformatics steps (src folder) into a single comman
 
 **Required Arguments**: <br>
 - <filename.bam> : Path to the input BAM file (must contain Read Groups!). <br>
-- <variants.vcf> : Path to the VCF file with variant sites. <br>
+- <variants.vcf> : Path to the VCF file containing only PASS heterozygous SNPs <br>
 - <genome.fa> : Path to the reference FASTA file. <br>
 - <annotation.gtf> : Path to the reference GTF annotation file. <br>
 
@@ -33,7 +33,6 @@ Optional Arguments: <br>
 These are passed directly to the run-aseReadCounter.sh sub-script: <br>
 - --min-mapping-quality <INT>: Minimum mapping quality for reads (default: 20).  <br>
 - --min-base-quality <INT>: Minimum base quality for bases (default: 20).  <br>
-- --perform-indels: Flag to include indels in allele counting.  <br>
 - --verbosity <LEVEL>: GATK verbosity level (default: INFO).  <br>
 - -h, --help: Display usage information.  <br>
 
@@ -61,7 +60,35 @@ The expression status of each gene is assigned using `minor_fq`: <br>
 - monoallelic if MAF ≤ 0.10 <br>
 
 
-## Pre-Processing Step: Add Read Groups to BAM Files (if missing)
+## Pre-Processing Steps
+
+### 1. WASP Mapping Bias Correction (optional but recommended)
+By default the ASE pipeline can be run without this step. However, for high-precision analyses - such as detecting subtle allelic imbalances or imprinting - it is recommended to correct for reference allele bias using WASP during STAR alignment. Note that this must be applied at alignment time and cannot be added retroactively to an existing BAM.
+
+When aligning DNA reads to a reference genome, differences between the sample and reference can cause reference allele bias, where reads matching the reference are more likely to align. This can distort allele-specific expression analyses. STAR includes an efficient implementation of WASP to correct for this bias when sample genotypes are provided (`--varVCFfile`). To use it, enable `--waspOutputMode` along with `--varVCFfile`.
+
+```
+STAR \
+--runThreadN 8 \
+--genomeDir $index \
+--readFilesCommand zcat \
+--readFilesIn file_1.fq.gz file_2.fq.gz \
+--outSAMtype BAM SortedByCoordinate \
+--outFilterMultimapNmax 1 \
+--quantMode GeneCounts \
+--sjdbGTFfile $annot_file \
+--waspOutputMode SAMtag \
+--varVCFfile $vcf_file \
+--outSAMattributes All
+```
+
+Next, we can use `samtools` to select reads that are uniquely mapped (`-q 255`) and have allele-specific bias corrected - either they don’t overlap SNPs (`![vW]`) or passed the WASP filter (`[vW]==1`):
+
+`samtools view -h -b -e '![vW] || [vW]==1' -q 255 -o filename.WASPfilter.aligned.bam filename.aligned.bam`
+
+Overall, it’s safe to enable `--waspOutputMode` by default, then the vW tag to filter reads only when reference bias matters (e.g., in ASE or imprinting studies); otherwise, you can ignore it and use all reads normally. But this procedure increases runtime and is only necessary for allele-specific analyses.
+
+### 2. Add Read Groups to BAM Files (if missing)
 GATK4 tools require properly formatted read groups in your BAM files to function correctly and ensure accurate downstream analysis (e.g., duplicate marking, variant calling, quality control).
 If your bam file does not contain read groups, you will get an error message. To verify if your BAM file already contains read group information, use the following command:
 
@@ -84,6 +111,21 @@ Optional Arguments: <br>
 --rgpl <PLATFORM>: Read Group Platform (PL tag). Default: Illumina. Valid values include ILLUMINA, SOLID, PACBIO, etc. <br>
 --rgpu <UNIT>: Read Group Platform Unit (PU tag). Default: base name of input BAM + .unit. <br>
  -o <file>: Specify the output BAM file name. Default: <input_bam_base>.RG.bam in the input BAM's directory. <br>
+
+### 3. Filter VCF for PASS Heterozygous SNPs
+ASEReadCounter can only assess allelic expression at heterozygous sites. Filtering 
+the VCF to retain only PASS heterozygous SNPs reduces runtime, removes noise from 
+failed variant calls, and excludes indels which have ambiguous read counts unsuitable 
+for allele-specific analysis.
+
+`bash src/run-filterVCF.sh <filename.vcf.gz> <sample_name>`
+
+- Filters for PASS heterozygous SNPs only — indels and failed variants excluded
+- Writes output to `filename.HET.SNPs.vcf.gz`
+- The sample name **must match** the sample column in your VCF header
+- This output file is what you pass as `<variants.vcf>` to the main pipeline
+
+
 
 
 ## Background Functions
@@ -151,37 +193,4 @@ Computes gene-level Minor Allele Frequency (MAF) and use it as a proxy to infer 
 
 ## Helper Functions
 
-#### Filter VCF file for heterozygous variants
-ASEReadCounter quantifies ASE which can only be assessed at heterozygous sites. 
-Filtering the VCF to include only these positions reduces runtime and memory usage by limiting the number of loci scanned in the BAM/CRAM file.
-
-`bash src/run-filterVCF.sh <filename.vcf.gz> <sample_name>`
-
-- It uses GATK SelectVariants and writes the output to filename.HET.vcf.gz
-- ASEReadCounter runs faster if only heterozygous positions are provided
-
-#### Correcting Mapping Bias with WASP
-
-When aligning DNA reads to a reference genome, differences between the sample and reference can cause reference allele bias, where reads matching the reference are more likely to align. This can distort allele-specific expression analyses. STAR includes an efficient implementation of WASP to correct for this bias when sample genotypes are provided (`--varVCFfile`). To use it, enable `--waspOutputMode` along with `--varVCFfile`.
-
-```
-STAR \
---runThreadN 8 \
---genomeDir $index \
---readFilesCommand zcat \
---readFilesIn file_1.fq.gz file_2.fq.gz \
---outSAMtype BAM SortedByCoordinate \
---outFilterMultimapNmax 1 \
---quantMode GeneCounts \
---sjdbGTFfile $annot_file \
---waspOutputMode SAMtag \
---varVCFfile $vcf_file \
---outSAMattributes All
-```
-
-Next, we can use `samtools` to select reads that are uniquely mapped (`-q 255`) and have allele-specific bias corrected — either they don’t overlap SNPs (`![vW]`) or passed the WASP filter (`[vW]==1`):
-
-`samtools view -h -b -e '![vW] || [vW]==1' -q 255 -o filename.WASPfilter.aligned.bam filename.aligned.bam`
-
-Overall, it’s safe to enable `--waspOutputMode` by default, then the vW tag to filter reads only when reference bias matters (e.g., in ASE or imprinting studies); otherwise, you can ignore it and use all reads normally.
-But this procedure increases runtime and is only necessary for allele-specific analyses. 
+ 

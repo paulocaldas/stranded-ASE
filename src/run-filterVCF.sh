@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # ---
-# This script filters a VCF file for heterozygous variants for a given sample name.
-# It uses GATK SelectVariants and writes the output to <input>.HET.vcf.gz.
+# Filters a VCF for PASS heterozygous SNPs only for a given sample name.
+# Uses GATK SelectVariants and writes the output to <input>.HET.SNPs.vcf.gz.
 #
-# Usage: ./filter_het_variants.sh <VCF.gz> <SAMPLE_NAME>
-# Example: ./filter_het_variants.sh cohort.vcf.gz Sample_01
+# Usage: ./run-filterVCF.sh <VCF.gz> <SAMPLE_NAME>
+# Example: ./run-filterVCF.sh cohort.vcf.gz Sample_01
 # ---
 
 set -euo pipefail
@@ -19,8 +19,9 @@ usage() {
     echo "  <VCF.gz>       Path to the input compressed VCF file (.vcf.gz)"
     echo "  <SAMPLE_NAME>  Sample name present in the VCF header (FORMAT columns)"
     echo ""
-    echo "This script filters heterozygous variants for the specified sample using GATK SelectVariants."
-    echo "It creates an output file named <VCF>.HET.vcf.gz in the same directory."
+    echo "This script filters for PASS heterozygous SNPs only for the specified sample"
+    echo "using GATK SelectVariants. It creates an output file named"
+    echo "<VCF>.HET.SNPs.vcf.gz in the same directory."
     echo ""
     exit 1
 }
@@ -33,7 +34,7 @@ fi
 
 VARIANTS_VCF="$1"
 SAMPLE_NAME="$2"
-VARIANTS_HET_VCF="${VARIANTS_VCF/.vcf.gz/.HET.vcf.gz}"
+VARIANTS_HET_VCF="${VARIANTS_VCF/.vcf.gz/.HET.SNPs.vcf.gz}"
 
 # Check if input VCF exists
 if [ ! -f "$VARIANTS_VCF" ]; then
@@ -55,13 +56,14 @@ if ! bcftools query -l "$VARIANTS_VCF" | grep -qx "${SAMPLE_NAME}"; then
     exit 1
 fi
 
-# Filter heterozygous variants for the given sample
+# Filter for PASS heterozygous SNPs only
 if [ ! -f "$VARIANTS_HET_VCF" ]; then
-    echo "🔧 Creating heterozygous-only VCF for sample '$SAMPLE_NAME': $VARIANTS_HET_VCF"
+    echo "🔧 Creating PASS heterozygous SNP-only VCF for sample '$SAMPLE_NAME': $VARIANTS_HET_VCF"
 
     gatk SelectVariants \
         -V "$VARIANTS_VCF" \
         --select-type-to-include SNP \
+        --exclude-filtered \
         --select "vc.getGenotype('${SAMPLE_NAME}').isHet()" \
         -O "$VARIANTS_HET_VCF"
 

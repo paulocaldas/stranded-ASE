@@ -5,7 +5,7 @@
 conda config --add channels defaults
 conda config --add channels bioconda
 conda config --add channels conda-forge
-conda config --set channel_priority strict
+conda config --set channel_priority flexible
 
 # This line is crucial for 'conda activate' to work in scripts
 source "$(conda info --base)/etc/profile.d/conda.sh"
