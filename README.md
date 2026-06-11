@@ -62,7 +62,20 @@ The expression status of each gene is assigned using `minor_fq`: <br>
 
 ## Pre-Processing Steps
 
-### 1. WASP Mapping Bias Correction (optional but recommended)
+### 1. Filter VCF for PASS Heterozygous SNPs
+ASEReadCounter can only assess allelic expression at heterozygous sites. Filtering 
+the VCF to retain only PASS heterozygous SNPs reduces runtime, removes noise from 
+failed variant calls, and excludes indels which have ambiguous read counts unsuitable 
+for allele-specific analysis.
+
+`bash src/run-filterVCF.sh <filename.vcf.gz> <sample_name>`
+
+- Filters for PASS heterozygous SNPs only — indels and failed variants excluded
+- Writes output to `filename.HET.SNPs.vcf.gz`
+- The sample name **must match** the sample column in your VCF header
+- This output file is what you pass as `<variants.vcf>` to the main pipeline
+
+### 2. WASP Mapping Bias Correction (optional but recommended)
 By default the ASE pipeline can be run without this step. However, for high-precision analyses - such as detecting subtle allelic imbalances or imprinting - it is recommended to correct for reference allele bias using WASP during STAR alignment. Note that this must be applied at alignment time and cannot be added retroactively to an existing BAM.
 
 When aligning DNA reads to a reference genome, differences between the sample and reference can cause reference allele bias, where reads matching the reference are more likely to align. This can distort allele-specific expression analyses. STAR includes an efficient implementation of WASP to correct for this bias when sample genotypes are provided (`--varVCFfile`). To use it, enable `--waspOutputMode` along with `--varVCFfile`.
@@ -88,22 +101,25 @@ Next, we can use `samtools` to select reads that are uniquely mapped (`-q 255`) 
 
 Overall, it’s safe to enable `--waspOutputMode` by default, then the vW tag to filter reads only when reference bias matters (e.g., in ASE or imprinting studies); otherwise, you can ignore it and use all reads normally. But this procedure increases runtime and is only necessary for allele-specific analyses.
 
-### 2. Add Read Groups to BAM Files (if missing)
-GATK4 tools require properly formatted read groups in your BAM files to function correctly and ensure accurate downstream analysis (e.g., duplicate marking, variant calling, quality control).
-If your bam file does not contain read groups, you will get an error message. To verify if your BAM file already contains read group information, use the following command:
+Note: the `--varVCFfile` should be the same filtered VCF generated in Step 1 (`filename.HET.SNPs.vcf.gz`), ensuring consistency between alignment correction and variant counting and reduces this to only the sites that actually matter for ASE — typically 10-20x fewer positions, making alignment faster (comparing to using the unfiltered VCF).
+
+### 3. Add Read Groups to BAM Files (if missing)
+GATK4 tools require properly formatted read groups in BAM files to function correctly.
+ASEReadCounter will fail with an error if read groups are missing or malformed.
+
+To verify if your BAM file already contains read group information, use the following command:
 
 `samtools view -H your_input.bam | grep '^@RG'` <br>
 
 If this command produces no output (or an incorrect output) you need to add or replace read groups. <br>
+
 If it shows well-defined @RG lines, you can skip this step. <br>
 
-*Run the wrapper for GATK's AddOrReplaceReadGroups.*
+**Run the wrapper for GATK's AddOrReplaceReadGroups.**
 
 `bash /src/run-addReadGroup.sh <filename.bam> <sample_name>`
 
-The only required argument here is the rgsm_value (sample name) that will be added to the Read Group.  <br>
-It is critical because it **MUST match the sample column name in your VCF file for subsequent analysis steps**. <br>
-This script will create a new BAM file (filename.RG.bam) in the same directory as your input file. <br>
+The only required argument here is the rgsm_value (sample name) that will be added to the Read Group. It is critical because it **MUST match the sample column name in your VCF file for subsequent analysis steps**. This script will create a new BAM file (filename.RG.bam) in the same directory as your input file. <br>
 
 Optional Arguments: <br>
 --rgid <ID>: Read Group ID (ID tag). Default: base name of input BAM. <br>
@@ -111,22 +127,6 @@ Optional Arguments: <br>
 --rgpl <PLATFORM>: Read Group Platform (PL tag). Default: Illumina. Valid values include ILLUMINA, SOLID, PACBIO, etc. <br>
 --rgpu <UNIT>: Read Group Platform Unit (PU tag). Default: base name of input BAM + .unit. <br>
  -o <file>: Specify the output BAM file name. Default: <input_bam_base>.RG.bam in the input BAM's directory. <br>
-
-### 3. Filter VCF for PASS Heterozygous SNPs
-ASEReadCounter can only assess allelic expression at heterozygous sites. Filtering 
-the VCF to retain only PASS heterozygous SNPs reduces runtime, removes noise from 
-failed variant calls, and excludes indels which have ambiguous read counts unsuitable 
-for allele-specific analysis.
-
-`bash src/run-filterVCF.sh <filename.vcf.gz> <sample_name>`
-
-- Filters for PASS heterozygous SNPs only — indels and failed variants excluded
-- Writes output to `filename.HET.SNPs.vcf.gz`
-- The sample name **must match** the sample column in your VCF header
-- This output file is what you pass as `<variants.vcf>` to the main pipeline
-
-
-
 
 ## Background Functions
 
@@ -138,11 +138,11 @@ GATK's ASEReadCounter doesn't inherently account for strand-specific read orient
 `bash /src/run-splitBAM.sh <input_bam>`
 
 Output:
-- Creates two new bam files (fwd and rev) inside a new folder (default: /data/bams-split)
+- Creates two new BAM files (fwd and rev) inside a new folder (default: bams-split)
 
-Optional Arguments: <br>
-- --threads <INT>: Number of cores to be used (default: 8).  <br>
-- --output-dir <INT>: Specify output folder name (default: /data/bams-split).  <br>
+Optional Arguments:
+- --threads: Number of cores to be used (default: 8).
+- --output-dir: Specify output folder name (default: bams-split).
 
 
 ### 2. aseReadCounter
@@ -190,7 +190,5 @@ Computes gene-level Minor Allele Frequency (MAF) and use it as a proxy to infer 
 4. Sum SNP counts per gene and computes maf_tot.
 5. Concatenate all SNPs variant considered into a column.
 6. Classify genes by expression pattern besed on the `maf_tot`.
-
-## Helper Functions
 
  
