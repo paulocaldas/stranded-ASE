@@ -14,13 +14,13 @@ usage() {
   echo "Usage: $0 <input_bam> [options]"
   echo ""
   echo "Arguments:"
-  echo "  <input_bam>      Path to the input BAM file (e.g., my_aligned.RG.bam)."
-  echo "                   The output prefix will be inferred from this filename (e.g., 'my_aligned.RG')."
+  echo "  <input_bam>        Path to the input BAM file (e.g., my_aligned.RG.bam)."
+  echo "                     The output prefix will be inferred from this filename (e.g., 'my_aligned.RG')."
   echo ""
   echo "Options:"
-  echo "  --threads <INT>  Number of threads for samtools (default: 1)."
-  echo "  --output-dir <DIR> Directory to save final output BAMs (default: 'bams-split')."
-  echo "  -h, --help       Display this help message."
+  echo "  --threads <INT>    Number of threads for samtools (default: 8)."
+  echo "  --output-dir <DIR> Directory to save all output BAMs (default: 'bams-split')."
+  echo "  -h, --help         Display this help message."
   echo ""
   echo "Example:"
   echo "  $0 /path/to/my_sample.RG.bam --threads 8 --output-dir /data/split_bams"
@@ -47,26 +47,26 @@ if [[ -z "$INPUT_BAM" ]]; then
 fi
 
 # Initialize optional parameters
-THREADS=8 # Default threads
-OUTPUT_DIR="bams-split" # Default output directory
+THREADS=8
+OUTPUT_DIR="bams-split"
 
 # Parse optional arguments
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --threads)
       THREADS="$2"
-      shift # past argument
+      shift
       ;;
     --output-dir)
       OUTPUT_DIR="$2"
-      shift # past argument
+      shift
       ;;
     *)
       echo "Error: Unknown option '$1'"
       usage
       ;;
   esac
-  shift # past argument or value
+  shift
 done
 
 # ---
@@ -107,26 +107,28 @@ echo "## Processing Forward Strand Reads..."
 echo "  Creating ${NAME_PREFIX}.fwd1.bam (Second in pair, mapped to forward strand)..."
 # -f 128 (0x80): read is second in pair
 # -F 16 (0x10): read is NOT mapped to reverse strand (i.e., mapped to forward strand)
-samtools view -@ "$THREADS" -b -f 128 -F 16 "$INPUT_BAM" > "${NAME_PREFIX}.fwd1.bam" || \
+samtools view -@ "$THREADS" -b -f 128 -F 16 "$INPUT_BAM" > "${OUTPUT_DIR}/${NAME_PREFIX}.fwd1.bam" || \
   { echo "Error: Failed to create ${NAME_PREFIX}.fwd1.bam. Exiting."; exit 1; }
-samtools index -@ "$THREADS" "${NAME_PREFIX}.fwd1.bam" || \
+samtools index -@ "$THREADS" "${OUTPUT_DIR}/${NAME_PREFIX}.fwd1.bam" || \
   { echo "Error: Failed to index ${NAME_PREFIX}.fwd1.bam. Exiting."; exit 1; }
 
 echo "  Creating ${NAME_PREFIX}.fwd2.bam (First in pair, mate mapped to forward strand)..."
 # -f 64 (0x40): read is first in pair
 # -F 32 (0x20): mate is NOT mapped to reverse strand (i.e., mate mapped to forward strand)
-samtools view -@ "$THREADS" -b -f 64 -F 32 "$INPUT_BAM" > "${NAME_PREFIX}.fwd2.bam" || \
+samtools view -@ "$THREADS" -b -f 64 -F 32 "$INPUT_BAM" > "${OUTPUT_DIR}/${NAME_PREFIX}.fwd2.bam" || \
   { echo "Error: Failed to create ${NAME_PREFIX}.fwd2.bam. Exiting."; exit 1; }
-samtools index -@ "$THREADS" "${NAME_PREFIX}.fwd2.bam" || \
+samtools index -@ "$THREADS" "${OUTPUT_DIR}/${NAME_PREFIX}.fwd2.bam" || \
   { echo "Error: Failed to index ${NAME_PREFIX}.fwd2.bam. Exiting."; exit 1; }
 
-# Combine alignments that originate on the forward strand.
+# Combine alignments that originate on the forward strand
 echo "  Merging forward strand alignments into ${NAME_PREFIX}.fwd.bam ..."
-samtools merge -@ "$THREADS" -f "${NAME_PREFIX}.fwd.bam" "${NAME_PREFIX}.fwd1.bam" "${NAME_PREFIX}.fwd2.bam" || \
+samtools merge -@ "$THREADS" -f "${OUTPUT_DIR}/${NAME_PREFIX}.fwd.bam" \
+  "${OUTPUT_DIR}/${NAME_PREFIX}.fwd1.bam" \
+  "${OUTPUT_DIR}/${NAME_PREFIX}.fwd2.bam" || \
   { echo "Error: Failed to merge forward strand BAMs. Exiting."; exit 1; }
-samtools index -@ "$THREADS" "${NAME_PREFIX}.fwd.bam" || \
+samtools index -@ "$THREADS" "${OUTPUT_DIR}/${NAME_PREFIX}.fwd.bam" || \
   { echo "Error: Failed to index ${NAME_PREFIX}.fwd.bam. Exiting."; exit 1; }
-echo "  Forward strand BAM created: ${NAME_PREFIX}.fwd.bam"
+echo "  Forward strand BAM created: ${OUTPUT_DIR}/${NAME_PREFIX}.fwd.bam"
 echo "---"
 
 # ---
@@ -139,53 +141,43 @@ echo "## Processing Reverse Strand Reads..."
 
 echo "  Creating ${NAME_PREFIX}.rev1.bam (Second in pair, mapped to reverse strand)..."
 # -f 144 (0x80 + 0x10): read is second in pair AND mapped to reverse strand
-samtools view -@ "$THREADS" -b -f 144 "$INPUT_BAM" > "${NAME_PREFIX}.rev1.bam" || \
+samtools view -@ "$THREADS" -b -f 144 "$INPUT_BAM" > "${OUTPUT_DIR}/${NAME_PREFIX}.rev1.bam" || \
   { echo "Error: Failed to create ${NAME_PREFIX}.rev1.bam. Exiting."; exit 1; }
-samtools index -@ "$THREADS" "${NAME_PREFIX}.rev1.bam" || \
+samtools index -@ "$THREADS" "${OUTPUT_DIR}/${NAME_PREFIX}.rev1.bam" || \
   { echo "Error: Failed to index ${NAME_PREFIX}.rev1.bam. Exiting."; exit 1; }
 
 echo "  Creating ${NAME_PREFIX}.rev2.bam (First in pair, mate mapped to reverse strand)..."
 # -f 96 (0x40 + 0x20): read is first in pair AND mate is mapped to reverse strand
-samtools view -@ "$THREADS" -b -f 96 "$INPUT_BAM" > "${NAME_PREFIX}.rev2.bam" || \
+samtools view -@ "$THREADS" -b -f 96 "$INPUT_BAM" > "${OUTPUT_DIR}/${NAME_PREFIX}.rev2.bam" || \
   { echo "Error: Failed to create ${NAME_PREFIX}.rev2.bam. Exiting."; exit 1; }
-samtools index -@ "$THREADS" "${NAME_PREFIX}.rev2.bam" || \
+samtools index -@ "$THREADS" "${OUTPUT_DIR}/${NAME_PREFIX}.rev2.bam" || \
   { echo "Error: Failed to index ${NAME_PREFIX}.rev2.bam. Exiting."; exit 1; }
 
-# Combine alignments that originate on the reverse strand.
+# Combine alignments that originate on the reverse strand
 echo "  Merging reverse strand alignments into ${NAME_PREFIX}.rev.bam ..."
-samtools merge -@ "$THREADS" -f "${NAME_PREFIX}.rev.bam" "${NAME_PREFIX}.rev1.bam" "${NAME_PREFIX}.rev2.bam" || \
+samtools merge -@ "$THREADS" -f "${OUTPUT_DIR}/${NAME_PREFIX}.rev.bam" \
+  "${OUTPUT_DIR}/${NAME_PREFIX}.rev1.bam" \
+  "${OUTPUT_DIR}/${NAME_PREFIX}.rev2.bam" || \
   { echo "Error: Failed to merge reverse strand BAMs. Exiting."; exit 1; }
-samtools index -@ "$THREADS" "${NAME_PREFIX}.rev.bam" || \
+samtools index -@ "$THREADS" "${OUTPUT_DIR}/${NAME_PREFIX}.rev.bam" || \
   { echo "Error: Failed to index ${NAME_PREFIX}.rev.bam. Exiting."; exit 1; }
-echo "  Reverse strand BAM created: ${NAME_PREFIX}.rev.bam"
+echo "  Reverse strand BAM created: ${OUTPUT_DIR}/${NAME_PREFIX}.rev.bam"
 echo "---"
 
 # ---
-# Move final BAM files to the specified output directory
-# ---
-echo "## Moving final BAM files to $OUTPUT_DIR ..."
-mv "${NAME_PREFIX}.fwd.bam" "$OUTPUT_DIR/" || \
-  { echo "Error: Failed to move ${NAME_PREFIX}.fwd.bam. Exiting."; exit 1; }
-mv "${NAME_PREFIX}.fwd.bam.bai" "$OUTPUT_DIR/" || \
-  { echo "Error: Failed to move ${NAME_PREFIX}.fwd.bam.bai. Exiting."; exit 1; }
-mv "${NAME_PREFIX}.rev.bam" "$OUTPUT_DIR/" || \
-  { echo "Error: Failed to move ${NAME_PREFIX}.rev.bam. Exiting."; exit 1; }
-mv "${NAME_PREFIX}.rev.bam.bai" "$OUTPUT_DIR/" || \
-  { echo "Error: Failed to move ${NAME_PREFIX}.rev.bam.bai. Exiting."; exit 1; }
-echo "---"
-
-# ---
-# Delete temporary files
+# Delete temporary intermediate files
 # ---
 echo "## Deleting temporary files ..."
-rm "${NAME_PREFIX}.fwd1.bam" "${NAME_PREFIX}.fwd1.bam.bai" || \
+rm "${OUTPUT_DIR}/${NAME_PREFIX}.fwd1.bam" "${OUTPUT_DIR}/${NAME_PREFIX}.fwd1.bam.bai" || \
   echo "Warning: Could not remove ${NAME_PREFIX}.fwd1.bam or its index."
-rm "${NAME_PREFIX}.fwd2.bam" "${NAME_PREFIX}.fwd2.bam.bai" || \
+rm "${OUTPUT_DIR}/${NAME_PREFIX}.fwd2.bam" "${OUTPUT_DIR}/${NAME_PREFIX}.fwd2.bam.bai" || \
   echo "Warning: Could not remove ${NAME_PREFIX}.fwd2.bam or its index."
-rm "${NAME_PREFIX}.rev1.bam" "${NAME_PREFIX}.rev1.bam.bai" || \
+rm "${OUTPUT_DIR}/${NAME_PREFIX}.rev1.bam" "${OUTPUT_DIR}/${NAME_PREFIX}.rev1.bam.bai" || \
   echo "Warning: Could not remove ${NAME_PREFIX}.rev1.bam or its index."
-rm "${NAME_PREFIX}.rev2.bam" "${NAME_PREFIX}.rev2.bam.bai" || \
+rm "${OUTPUT_DIR}/${NAME_PREFIX}.rev2.bam" "${OUTPUT_DIR}/${NAME_PREFIX}.rev2.bam.bai" || \
   echo "Warning: Could not remove ${NAME_PREFIX}.rev2.bam or its index."
 echo "---"
 
 echo "### Script completed successfully. ###"
+echo "  Forward BAM: ${OUTPUT_DIR}/${NAME_PREFIX}.fwd.bam"
+echo "  Reverse BAM: ${OUTPUT_DIR}/${NAME_PREFIX}.rev.bam"
