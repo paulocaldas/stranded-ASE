@@ -60,7 +60,7 @@ REV_BASE_NAME=$(basename "${REV_TAB_FILE%.tab}") # e.g., "my_sample.rev"
 GTF_BASE_NAME=$(basename "${GTF_FILE%.gtf}")
 
 # Temporary directory
-TMP_DIR="${TAB_DIR}/tmp" # Place tmp folder within the same dir as the input tabs
+TMP_DIR="${TAB_DIR}/tmp"
 
 # ---
 # Pipeline Steps
@@ -84,17 +84,23 @@ fi
 echo " "
 
 # Step 2: Convert GTF (gene features) to BED format
+# Searches for gene_id and gene_name by key rather than column position,
+# making it robust across different GTF versions and attribute orderings.
 echo ".converting GTF to BED format"
 GTF_BED="${TMP_DIR}/${GTF_BASE_NAME}.bed"
 if [ ! -f "$GTF_BED" ]; then
-  cat "$GTF_FILE" | \
-    awk 'OFS="\t" {
-      if ($3=="gene") {
-        gsub("gene_id ", "", $10);  # Clean gene_id
-        gsub("gene_name ", "", $14); # Clean gene_name
-        print $1, $4-1, $5, $10, $14, $7
+  awk 'OFS="\t" {
+    if ($3=="gene") {
+      gene_id=""; gene_name=""
+      for(i=9; i<=NF; i++) {
+        if ($i=="gene_id") gene_id=$(i+1)
+        if ($i=="gene_name") gene_name=$(i+1)
       }
-    }' | tr -d '";' > "${GTF_BED}" || \
+      gsub(/[";]/, "", gene_id)
+      gsub(/[";]/, "", gene_name)
+      print $1, $4-1, $5, gene_id, gene_name, $7
+    }
+  }' "$GTF_FILE" > "${GTF_BED}" || \
     { echo "Error: GTF to BED conversion failed."; exit 1; }
   echo "  GTF converted to ${GTF_BED}."
 else
@@ -118,56 +124,49 @@ else
 fi
 echo " "
 
-# Step 4: Convert Input .tab files to "rich" temporary BED format for intersect
+# Step 4: Convert input .tab files to temporary BED format for intersect
 echo ".converting input .tab files to temporary BED format (preserving all columns)"
 TEMP_FWD_BED="${TMP_DIR}/${FWD_BASE_NAME}.temp.bed"
 TEMP_REV_BED="${TMP_DIR}/${REV_BASE_NAME}.temp.bed"
 
 awk 'NR > 1 {
-    # Store original columns to append later
     orig_cols = $3 "\t" $4 "\t" $5 "\t" $6 "\t" $7 "\t" $8 "\t" $9
-
-    # BED core fields
     chrom = $1
     chromStart = ($2 - 1)
     chromEnd = $2
     name = ($3 == "." ? $1 "_" $2 "_" $4 "_" $5 : $3)
-    score = $8 # totalCount
+    score = $8
     strand = "."
-
     print chrom "\t" chromStart "\t" chromEnd "\t" name "\t" score "\t" strand "\t" orig_cols
 }' "${FWD_TAB_FILE}" > "${TEMP_FWD_BED}" || \
-{ echo "Error: Converting FWD .tab to temp BED failed."; exit 1; }
+  { echo "Error: Converting FWD .tab to temp BED failed."; exit 1; }
 echo "  Created temporary BED for forward reads: ${TEMP_FWD_BED}"
 
 awk 'NR > 1 {
     orig_cols = $3 "\t" $4 "\t" $5 "\t" $6 "\t" $7 "\t" $8 "\t" $9
-
     chrom = $1
     chromStart = ($2 - 1)
     chromEnd = $2
     name = ($3 == "." ? $1 "_" $2 "_" $4 "_" $5 : $3)
-    score = $8 # totalCount
+    score = $8
     strand = "."
-
     print chrom "\t" chromStart "\t" chromEnd "\t" name "\t" score "\t" strand "\t" orig_cols
 }' "${REV_TAB_FILE}" > "${TEMP_REV_BED}" || \
-{ echo "Error: Converting REV .tab to temp BED failed."; exit 1; }
+  { echo "Error: Converting REV .tab to temp BED failed."; exit 1; }
 echo "  Created temporary BED for reverse reads: ${TEMP_REV_BED}"
 echo " "
 
 # Step 5: Perform bedtools intersect
 echo ".performing bedtools intersect"
 
-# Final output files will be in the same directory as input tabs
 ANNOTATED_FWD_FILE="${TAB_DIR}/${FWD_BASE_NAME}.annotated.tab"
 ANNOTATED_REV_FILE="${TAB_DIR}/${REV_BASE_NAME}.annotated.tab"
 
 # Construct the new header for the annotated output
 NEW_HEADER="contig\tposition\tvariantID\trefAllele\taltAllele\trefCount\taltCount\ttotalCount\tsample\tgene_chr\tgene_start\tgene_end\tgene_id\tgene_name\tgene_strand"
 
-echo -e "${NEW_HEADER}" > "${ANNOTATED_FWD_FILE}" # Write header to fwd output
-echo -e "${NEW_HEADER}" > "${ANNOTATED_REV_FILE}" # Write header to rev output
+echo -e "${NEW_HEADER}" > "${ANNOTATED_FWD_FILE}"
+echo -e "${NEW_HEADER}" > "${ANNOTATED_REV_FILE}"
 
 echo "  Intersecting forward reads with forward GTF genes..."
 bedtools intersect -a "${TEMP_FWD_BED}" -b "${GTF_FWD_BED}" -wa -wb | \
@@ -194,17 +193,17 @@ echo ".merging fwd and rev tables"
 OUTPUT_MERGED_FILE=${ANNOTATED_FWD_FILE/.fwd/}
 echo "Output File: $OUTPUT_MERGED_FILE"
 
-# Get the header from the first file and write it to the output file
-head -n 1 "$ANNOTATED_REV_FILE" > "$OUTPUT_MERGED_FILE" || \
-  { echo "Error: Failed to write header from ${FWD_ANNOTATED_FILE}. Exiting."; exit 1; }
+# Write header from annotated fwd file
+head -n 1 "$ANNOTATED_FWD_FILE" > "$OUTPUT_MERGED_FILE" || \
+  { echo "Error: Failed to write header from ${ANNOTATED_FWD_FILE}. Exiting."; exit 1; }
 
-# Append the data (excluding header) from the first file
+# Append data from forward file (excluding header)
 tail -n +2 "$ANNOTATED_FWD_FILE" >> "$OUTPUT_MERGED_FILE" || \
-  { echo "Error: Failed to append data from ${FWD_ANNOTATED_FILE}. Exiting."; exit 1; }
+  { echo "Error: Failed to append data from ${ANNOTATED_FWD_FILE}. Exiting."; exit 1; }
 
-# 3. Append the data (excluding header) from the second file
+# Append data from reverse file (excluding header)
 tail -n +2 "$ANNOTATED_REV_FILE" >> "$OUTPUT_MERGED_FILE" || \
-  { echo "Error: Failed to append data from ${REV_ANNOTATED_FILE}. Exiting."; exit 1; }
+  { echo "Error: Failed to append data from ${ANNOTATED_REV_FILE}. Exiting."; exit 1; }
 
 # Step 7: Clean up temporary files
 echo ".cleaning up temporary files"
@@ -215,3 +214,4 @@ echo " "
 
 echo " "
 echo "> Variant Annotation Completed!"
+echo "  Output: ${OUTPUT_MERGED_FILE}"
